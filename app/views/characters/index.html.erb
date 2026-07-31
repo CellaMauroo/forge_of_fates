@@ -1,0 +1,46 @@
+<% content_for :full_width_layout, true %>
+
+<div class="min-h-screen bg-slate-950 text-slate-100">
+  <%= render ::Dashboard::HeaderComponent.new(user: Current.user) %>
+
+  <main class="mx-auto max-w-6xl px-5 py-9 sm:px-6 sm:py-12 lg:px-8">
+    <section class="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p class="text-sm font-medium text-slate-500">Bem-vindo de volta,</p>
+        <h1 class="mt-1 font-serif text-3xl font-semibold tracking-tight text-white sm:text-4xl"><%= Current.user.display_name %><span class="text-slate-600">.</span></h1>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 sm:gap-3">
+        <%= render ::Dashboard::StatCardComponent.new(value: @characters.size, label: "Personagens", tone: :amber) %>
+        <%= render ::Dashboard::StatCardComponent.new(value: @characters.sum(&:total_level), label: "Nível total", tone: :violet) %>
+        <%= render ::Dashboard::StatCardComponent.new(value: @characters.count(&:spellcaster?), label: "Conjuradores", tone: :cyan) %>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <h2 class="font-serif text-2xl font-semibold text-white">Meus personagens</h2>
+          <span class="rounded-full border border-slate-800 bg-slate-900 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-slate-400"><%= @characters.size %></span>
+        </div>
+        <%= link_to wizard_step_characters_path("race"), class: "inline-flex cursor-pointer items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/10 transition hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-slate-950" do %>
+          <%= lucide_icon("plus", size: 18, "aria-hidden": true) %>
+          Criar personagem
+        <% end %>
+      </div>
+
+      <% if @characters.empty? %>
+        <div class="mt-5 rounded-2xl border border-slate-800 bg-slate-900/45 px-5 py-4 text-sm text-slate-400">
+          Seu grimório ainda está vazio. Quando os personagens forem cadastrados, eles aparecerão aqui automaticamente.
+        </div>
+      <% end %>
+
+      <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <% @characters.each do |character| %>
+          <%= render ::Characters::CardComponent.new(character: character) %>
+        <% end %>
+        <%= render ::Characters::CreateCardComponent.new %>
+      </div>
+    </section>
+  </main>
+</div>

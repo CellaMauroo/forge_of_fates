@@ -1,0 +1,62 @@
+- content_for :full_width_layout, true
+.min-h-screen.flex.items-center.justify-center.bg-slate-950.px-4.py-8
+  .w-full.max-w-5xl.rounded-3xl.overflow-hidden.border.border-slate-800.shadow-2xl.flex.flex-col{ class: "md:flex-row" }
+    / Coluna esquerda - branding
+    %div{ class: "relative w-full md:w-1/2 p-10 md:p-14 bg-gradient-to-br from-indigo-950 via-slate-950 to-slate-900" }
+      .flex.items-center.gap-3.mb-16
+        %div{ class: "w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center" }
+          %span.text-amber-500 ⚔
+        %span.font-serif.text-lg.text-white Forge of Fates
+
+      %h1.font-serif.text-4xl.text-white.leading-tight{ class: "md:text-5xl" }
+        Sua jornada
+        %br
+        %span.text-amber-500 começa aqui.
+
+      %p.text-slate-400.mt-6.mb-8{ class: "max-w-sm" }
+        Crie, gerencie e evolua seus personagens de D&D 5e com uma ferramenta digna de um Mestre.
+
+      %ul.space-y-4
+        %li.flex.items-center.gap-3.text-slate-300
+          %div{ class: "w-8 h-8 rounded-full bg-violet-500/10 border border-violet-500/30 flex items-center justify-center" }
+            %span.text-violet-400.text-sm ✦
+          Criação guiada passo a passo
+        %li.flex.items-center.gap-3.text-slate-300
+          %div{ class: "w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center" }
+            %span.text-amber-400.text-sm ✨
+          Gestão de Spell Slots interativa
+        %li.flex.items-center.gap-3.text-slate-300
+          %div{ class: "w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center" }
+            %span.text-emerald-400.text-sm 👥
+          Suporte completo a Multiclasse
+        %li.flex.items-center.gap-3.text-slate-300
+          %div{ class: "w-8 h-8 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center" }
+            %span.text-rose-400.text-sm 🛡
+          Calculadora de Point Buy em tempo real
+
+      %p.text-xs.text-slate-600.mt-10
+        D&D 5ª Edição · Sistema de Referência
+
+    / Coluna direita - formulário
+    %div{ class: "w-full md:w-1/2 bg-slate-900 p-10 md:p-14 flex flex-col justify-center" }
+      %h2.font-serif.text-3xl.text-white Entrar na conta
+      %p.text-slate-400.mt-2.mb-8 Acesse seu grimório de personagens com seu e-mail e senha.
+
+      = form_with url: session_path, class: "contents" do |form|
+        .mb-5
+          %label.block.text-xs.font-semibold.tracking-wide.text-slate-400.mb-2{ for: "email_address" } E-MAIL
+          = form.email_field :email_address, required: true, autofocus: true, autocomplete: "username", placeholder: "voce@exemplo.com", value: params[:email_address], class: "block w-full rounded-lg bg-slate-800/60 border border-slate-700 text-white placeholder-slate-500 px-4 py-3 focus:outline-none focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20"
+
+        .mb-6.relative
+          .flex.items-center.justify-between.mb-2
+            %label.block.text-xs.font-semibold.tracking-wide.text-slate-400{ for: "password" } SENHA
+            = link_to "Esqueci minha senha", new_password_path, class: "text-xs font-medium text-amber-400 hover:text-amber-300"
+          .relative{ data: { controller: "password-toggle" } }
+            = form.password_field :password, required: true, autocomplete: "current-password", maxlength: 72, placeholder: "Sua senha", class: "block w-full rounded-lg bg-slate-800/60 border border-slate-700 text-white placeholder-slate-500 px-4 py-3 pr-12 focus:outline-none focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20", data: { password_toggle_target: "input" }, id: "password"
+            %button{ type: "button", class: "absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition", data: { action: "click->password-toggle#toggle", password_toggle_target: "icon" } }
+              %span{ "aria-hidden": "true" } 👁
+
+        = form.submit "Entrar na Forja", class: "w-full text-center rounded-lg px-4 py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-slate-900"
+
+      %p.text-center.text-xs.text-slate-600.mt-6
+        D&D 5e · Forge of Fates · v0.1

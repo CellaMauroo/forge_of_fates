@@ -1,0 +1,30 @@
+- content_for(:full_width_layout, true)
+- school_tones = { "Evocação" => "border-rose-500/30 bg-rose-500/10 text-rose-400", "Conjuração" => "border-emerald-500/30 bg-emerald-500/10 text-emerald-400", "Transmutação" => "border-cyan-500/30 bg-cyan-500/10 text-cyan-400", "Abjuração" => "border-blue-500/30 bg-blue-500/10 text-blue-400", "Encantamento" => "border-violet-500/30 bg-violet-500/10 text-violet-400", "Adivinhação" => "border-amber-500/30 bg-amber-500/10 text-amber-400", "Ilusão" => "border-indigo-500/30 bg-indigo-500/10 text-indigo-400" }
+= render "characters/wizard/stepper"
+= form_with url: wizard_step_characters_path("spells"), method: :patch, scope: :wizard, class: "min-h-screen bg-[#0b0f19] pb-28 text-slate-100", data: { controller: "spell-picker" } do |form|
+  %main.mx-auto.max-w-6xl.px-5.pb-12.pt-7.sm:px-8
+    .flex.items-end.justify-between
+      %div
+        %h1.font-serif.text-3xl.font-semibold.uppercase Grimório de magias
+        %p.mt-2.text-slate-400 Selecione as magias que seu personagem conhece ao iniciar.
+      %div.text-right
+        %strong.block.text-3xl.text-violet-400{ data: { spell_picker_target: "count" } }= @wizard.dig("spells", "spell_ids").size
+        %span.text-sm.text-slate-500 selecionadas
+    .mt-6.flex.flex-wrap.gap-2
+      - [["all", "Todas"], ["0", "Truques"], ["1", "1º Nível"], ["2", "2º Nível"], ["3", "3º Nível"]].each do |filter, label|
+        %button.cursor-pointer.rounded-xl.bg-slate-900.px-4.py-2.text-sm.font-semibold.text-slate-400.first:bg-violet-600.first:text-white{ type: "button", data: { action: "spell-picker#filter", level: filter } }= label
+    .mt-6.grid.grid-cols-1.gap-4.md:grid-cols-2
+      - @spells.each do |spell|
+        - selected = @wizard.dig("spells", "spell_ids").map(&:to_s).include?(spell.id.to_s)
+        - card_classes = selected ? "border-violet-500 bg-violet-500/5" : "border-slate-800"
+        - school_tone = school_tones.fetch(spell.school, "border-slate-700 bg-slate-800 text-slate-300")
+        %label{ class: "cursor-pointer rounded-2xl border bg-slate-900 p-5 transition hover:border-violet-500 #{card_classes}", data: { spell_picker_target: "card", level: spell.level, action: "click->spell-picker#select" } }
+          = check_box_tag "wizard[spell_ids][]", spell.id, selected, class: "sr-only", data: { spell_picker_target: "input" }
+          .flex.items-center.gap-2
+            %span{ class: "rounded border px-2 py-1 text-xs font-bold #{school_tone}" }= spell.school
+            %span.text-xs.text-slate-500= spell.level.zero? ? "Truque" : "#{spell.level}º Nível"
+            - if selected
+              %span.ml-auto.text-violet-400 ✓
+          %h2.mt-3.font-serif.text-xl.font-semibold= spell.name
+          %p.mt-2.text-sm.text-slate-400= spell.description.to_s.truncate(120)
+  = render "characters/wizard/footer", form: form

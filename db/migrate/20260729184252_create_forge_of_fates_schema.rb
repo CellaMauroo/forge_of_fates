@@ -194,7 +194,7 @@ class CreateForgeOfFatesSchema < ActiveRecord::Migration[8.1]
       t.boolean :is_primary_class, default: false, null: false
       t.timestamps
     end
-    add_index :character_classes, [:character_id, :class_id], unique: true
+    add_index :character_classes, [ :character_id, :class_id ], unique: true
 
     create_table :character_level_histories do |t|
       t.references :character, null: false, foreign_key: true
@@ -210,7 +210,7 @@ class CreateForgeOfFatesSchema < ActiveRecord::Migration[8.1]
     end
     add_foreign_key :character_level_histories, :abilities, column: :asi_ability_1, primary_key: :code
     add_foreign_key :character_level_histories, :abilities, column: :asi_ability_2, primary_key: :code
-    add_index :character_level_histories, [:character_id, :character_level], unique: true
+    add_index :character_level_histories, [ :character_id, :character_level ], unique: true
 
     create_table :character_proficiencies, id: false do |t|
       t.references :character, null: false, foreign_key: true

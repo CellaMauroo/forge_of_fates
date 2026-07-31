@@ -1,0 +1,24 @@
+- steps = [["race", "Raça"], ["klass", "Classe"], ["abilities", "Atributos"], ["background", "Antecedente"], ["spells", "Magias"]]
+- active_index = steps.index { |step, _| step == @step }
+%header{ class: "mx-auto max-w-6xl bg-[#0b0f19] px-5 pt-7 sm:px-8" }
+  .relative.flex.items-center.justify-between
+    = link_to characters_path, class: "cursor-pointer text-sm font-semibold text-slate-500 transition hover:text-slate-300" do
+      ← Voltar
+    %p{ class: "absolute left-1/2 -translate-x-1/2 font-serif text-base font-bold uppercase tracking-tight text-amber-400" } Forge of Fates
+  .mt-8.flex.items-start
+    - steps.each_with_index do |(step, label), index|
+      - step_tone = index < active_index ? "text-slate-400" : (index == active_index ? "text-amber-400" : "text-slate-500")
+      - step_classes = "relative flex flex-1 flex-col items-center #{step_tone}"
+      %div{ class: step_classes }
+        - if index.positive?
+          - connector_classes = index <= active_index ? "absolute top-5 h-px bg-amber-500/50" : "absolute top-5 h-px bg-slate-800"
+          %div{ class: connector_classes, style: "left: calc(-50% + 24px); right: calc(50% + 24px);" }
+        - indicator_classes = if index < active_index
+          - "relative z-10 flex size-10 items-center justify-center rounded-full border-2 border-amber-500 bg-amber-500 text-sm font-bold text-slate-950"
+        - elsif index == active_index
+          - "relative z-10 flex size-10 items-center justify-center rounded-full border-2 border-amber-500 text-sm font-bold text-amber-400"
+        - else
+          - "relative z-10 flex size-10 items-center justify-center rounded-full border-2 border-slate-800 bg-slate-900 text-sm font-bold text-slate-500"
+        %span{ class: indicator_classes }
+          = index < active_index ? "✓" : index + 1
+        %span.mt-2.max-w-20.truncate.text-center.text-xs.font-semibold.sm:text-sm= label

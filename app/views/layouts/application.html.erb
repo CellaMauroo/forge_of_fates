@@ -23,9 +23,16 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
-    <main class="container mx-auto mt-28 px-5 flex">
+  <body class="bg-[#0b0f19]">
+    <div id="flash">
+      <%= render FlashComponent.new(flash: flash, elevated: request.path.start_with?("/characters/wizard")) %>
+    </div>
+    <% if content_for?(:full_width_layout) %>
       <%= yield %>
-    </main>
+    <% else %>
+      <main class="container mx-auto mt-28 px-5 flex">
+        <%= yield %>
+      </main>
+    <% end %>
   </body>
 </html>

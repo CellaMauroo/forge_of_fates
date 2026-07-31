@@ -1,4 +1,19 @@
 Rails.application.routes.draw do
+  root "characters#index"
+  get "em-breve/:feature", to: "pages#coming_soon", as: :coming_soon
+  resource :session
+  resources :passwords, param: :token
+  resources :characters, only: %i[ index show create ] do
+    member do
+      patch :hit_points
+      patch :spell_slot
+    end
+    collection do
+      delete "wizard", to: "characters/wizard#destroy", as: :wizard
+      get "wizard/:step", to: "characters/wizard#show", as: :wizard_step
+      patch "wizard/:step", to: "characters/wizard#update"
+    end
+  end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

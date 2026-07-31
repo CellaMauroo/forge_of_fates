@@ -1,0 +1,34 @@
+- content_for(:full_width_layout, true)
+= render "characters/wizard/stepper"
+= form_with url: wizard_step_characters_path("abilities"), method: :patch, scope: :wizard, class: "min-h-screen bg-[#0b0f19] pb-28 text-slate-100", data: { controller: "point-buy", point_buy_bonuses_value: @racial_bonuses } do |form|
+  %main.mx-auto.max-w-6xl.px-5.pb-12.pt-7.sm:px-8
+    .flex.items-start.justify-between.gap-5
+      %div
+        %h1.font-serif.text-3xl.font-semibold.uppercase Distribuição de atributos
+        %p.mt-2.text-slate-400 Sistema Point Buy — distribua 27 pontos entre os atributos.
+      %div{ class: "rounded-2xl border border-amber-500/30 bg-amber-500/10 px-6 py-4 text-center" }
+        %strong.block.text-3xl.text-amber-400{ data: { point_buy_target: "remaining" } } 27
+        %span.text-sm.text-slate-400 pts restantes
+    .mt-8.grid.grid-cols-1.gap-4.md:grid-cols-2.xl:grid-cols-3
+      - { "str" => ["FOR", "Força"], "dex" => ["DES", "Destreza"], "con" => ["CON", "Constituição"], "int" => ["INT", "Inteligência"], "wis" => ["SAB", "Sabedoria"], "cha" => ["CAR", "Carisma"] }.each do |key, (short, label)|
+        - value = @wizard.dig("abilities", "base_attributes", key).to_i
+        .rounded-2xl.border.border-slate-800.bg-slate-900.p-5{ data: { point_buy_target: "card", ability: key } }
+          .flex.justify-between
+            %div
+              %p.font-serif.font-bold.text-amber-400= short
+              %p.text-sm.text-slate-500= label
+            %p.text-right.text-sm.text-slate-400 mod
+            %strong.text-xl.text-rose-400{ data: { point_buy_target: "modifier" } } −1
+          .mt-5.flex.items-center.justify-between
+            %button.flex.size-10.cursor-pointer.items-center.justify-center.rounded-xl.bg-slate-950.text-xl.text-slate-300{ type: "button", data: { action: "point-buy#decrement" } } −
+            %div.text-center
+              %strong.text-3xl{ data: { point_buy_target: "base" } }= value
+              %span.mx-1.text-amber-400{ data: { point_buy_target: "bonus" } }
+              %span.text-slate-500 →
+              %strong.text-2xl{ data: { point_buy_target: "final" } }= value
+            %button.flex.size-10.cursor-pointer.items-center.justify-center.rounded-xl.bg-slate-950.text-xl.text-slate-300{ type: "button", data: { action: "point-buy#increment" } } +
+          = hidden_field_tag "wizard[base_attributes][#{key}]", value, data: { point_buy_target: "input" }
+    %div{ class: "mt-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-5" }
+      %p.text-xs.font-bold.uppercase.tracking-wider.text-slate-500 Tabela de custo
+      %p.mt-3.text-sm.text-slate-300 8 → 0pts   9 → 1pts   10 → 2pts   11 → 3pts   12 → 4pts   13 → 5pts   14 → 7pts   15 → 9pts
+  = render "characters/wizard/footer", form: form

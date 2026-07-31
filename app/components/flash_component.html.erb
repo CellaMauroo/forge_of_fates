@@ -1,0 +1,9 @@
+<div class="pointer-events-none fixed right-5 z-50 flex w-[min(24rem,calc(100vw-2.5rem))] flex-col gap-3 <%= position_class %>" aria-live="polite">
+  <% messages.each do |type, message| %>
+    <div data-controller="flash" class="pointer-events-auto flex items-start gap-3 rounded-2xl border px-4 py-3 shadow-2xl shadow-slate-950/40 <%= tone_for(type) %>">
+      <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-950/35 text-sm font-bold"><%= icon_for(type) %></span>
+      <p class="flex-1 text-sm font-medium leading-6"><%= message %></p>
+      <button type="button" class="cursor-pointer text-lg leading-5 opacity-70 transition hover:opacity-100" data-action="flash#dismiss" aria-label="Fechar aviso">×</button>
+    </div>
+  <% end %>
+</div>
