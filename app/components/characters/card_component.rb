@@ -23,7 +23,7 @@ class Characters::CardComponent < ViewComponent::Base
 
     def class_label
       level = character.primary_character_class&.class_level
-      [character.primary_class_name, level && "#{level}º nível"].compact.join(" · ")
+      [ character.primary_class_name, level && "#{level}º nível" ].compact.join(" · ")
     end
 
     def spell_count

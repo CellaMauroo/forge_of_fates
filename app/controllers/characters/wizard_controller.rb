@@ -2,19 +2,25 @@ class Characters::WizardController < ApplicationController
   STEPS = %w[race klass abilities background spells].freeze
   ABILITIES = %w[str dex con int wis cha].freeze
   BACKGROUND_DETAILS = {
-    "Acólito" => { skills: "Intuição, Religião", items: ["Símbolo sagrado", "Livro de orações", "15 PO"] },
-    "Criminoso" => { skills: "Enganação, Furtividade", items: ["Pé de cabra", "Kit de ladrão", "15 PO"] },
-    "Herói do Povo" => { skills: "Trato de Animais, Sobrevivência", items: ["Ferramentas artesanais", "Pá de ferro", "10 PO"] },
-    "Nobre" => { skills: "História, Persuasão", items: ["Roupas finas", "Anel de sinete", "25 PO"] },
-    "Sábio" => { skills: "Arcanismo, História", items: ["Frasco de tinta", "Pena de escrita", "10 PO"] },
-    "Soldado" => { skills: "Atletismo, Intimidação", items: ["Insígnia de posto", "Troféu de batalha", "10 PO"] }
+    "Acólito" => { skills: "Intuição, Religião", items: [ "Símbolo sagrado", "Livro de orações", "15 PO" ] },
+    "Criminoso" => { skills: "Enganação, Furtividade", items: [ "Pé de cabra", "Kit de ladrão", "15 PO" ] },
+    "Herói do Povo" => { skills: "Trato de Animais, Sobrevivência", items: [ "Ferramentas artesanais", "Pá de ferro", "10 PO" ] },
+    "Nobre" => { skills: "História, Persuasão", items: [ "Roupas finas", "Anel de sinete", "25 PO" ] },
+    "Sábio" => { skills: "Arcanismo, História", items: [ "Frasco de tinta", "Pena de escrita", "10 PO" ] },
+    "Soldado" => { skills: "Atletismo, Intimidação", items: [ "Insígnia de posto", "Troféu de batalha", "10 PO" ] }
   }.freeze
 
   before_action :set_step
 
   def show
     load_collections
-    render "characters/wizard/#{@step}"
+    case @step
+    when "race" then render :race
+    when "klass" then render :klass
+    when "abilities" then render :abilities
+    when "background" then render :background
+    when "spells" then render :spells
+    end
   end
 
   def update

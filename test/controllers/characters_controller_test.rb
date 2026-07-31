@@ -15,6 +15,6 @@ class CharactersControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "h1", text: "One."
     assert_select "h2", text: "Meus personagens"
-    assert_select "a[href='#new-character']", text: /Criar personagem/
+    assert_select "a[href='/characters/wizard/race']", text: /Criar personagem/
   end
 end

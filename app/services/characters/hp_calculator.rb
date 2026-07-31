@@ -5,6 +5,6 @@ class Characters::HpCalculator
   end
 
   def calculate
-    [@dnd_class.hit_die + @character.ability_modifier(:con), 1].max
+    [ @dnd_class.hit_die + @character.ability_modifier(:con), 1 ].max
   end
 end
