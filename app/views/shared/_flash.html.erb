@@ -1,0 +1,3 @@
+<div id="flash">
+  <%= render FlashComponent.new(flash: flash, elevated: request.path.start_with?("/characters/wizard")) %>
+</div>
