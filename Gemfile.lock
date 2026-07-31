@@ -141,7 +141,7 @@ GEM
       temple (>= 0.8.2)
       thor
       tilt
-    haml-rails (3.0.0)
+    haml-rails (3.1.0)
       actionpack (>= 5.1)
       activesupport (>= 5.1)
       haml (>= 4.0.6)
@@ -295,7 +295,7 @@ GEM
       zeitwerk (~> 2.6)
     rainbow (3.1.1)
     rake (13.4.2)
-    rbs (4.1.0)
+    rbs (4.1.1)
       logger
       prism (>= 1.6.0)
       tsort
