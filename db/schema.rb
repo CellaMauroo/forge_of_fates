@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_29_184252) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_31_013000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -115,13 +115,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_184252) do
     t.text "personality_traits"
     t.string "player_name"
     t.bigint "race_id", null: false
+    t.jsonb "spell_slots_state", default: {}, null: false
     t.integer "str_base", default: 8, null: false
     t.bigint "subrace_id"
     t.datetime "updated_at", null: false
+    t.bigint "user_id"
     t.integer "wis_base", default: 8, null: false
     t.index ["background_id"], name: "index_characters_on_background_id"
     t.index ["race_id"], name: "index_characters_on_race_id"
     t.index ["subrace_id"], name: "index_characters_on_subrace_id"
+    t.index ["user_id"], name: "index_characters_on_user_id"
   end
 
   create_table "class_multiclass_requirements", primary_key: ["class_id", "ability_code"], force: :cascade do |t|
@@ -247,6 +250,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_184252) do
     t.index ["name"], name: "index_races_on_name", unique: true
   end
 
+  create_table "sessions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "ip_address"
+    t.datetime "updated_at", null: false
+    t.string "user_agent"
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_sessions_on_user_id"
+  end
+
   create_table "spells", force: :cascade do |t|
     t.string "casting_time"
     t.string "components"
@@ -279,6 +291,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_184252) do
     t.index ["race_id"], name: "index_subraces_on_race_id"
   end
 
+  create_table "users", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "email_address", null: false
+    t.string "password_digest", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email_address"], name: "index_users_on_email_address", unique: true
+  end
+
   add_foreign_key "character_classes", "characters"
   add_foreign_key "character_classes", "classes"
   add_foreign_key "character_classes", "subclasses"
@@ -297,6 +317,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_184252) do
   add_foreign_key "characters", "backgrounds"
   add_foreign_key "characters", "races"
   add_foreign_key "characters", "subraces"
+  add_foreign_key "characters", "users"
   add_foreign_key "class_multiclass_requirements", "abilities", column: "ability_code", primary_key: "code"
   add_foreign_key "class_multiclass_requirements", "classes"
   add_foreign_key "class_spells", "classes"
@@ -309,6 +330,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_184252) do
   add_foreign_key "race_ability_bonuses", "abilities", column: "ability_code", primary_key: "code"
   add_foreign_key "race_ability_bonuses", "races"
   add_foreign_key "race_ability_bonuses", "subraces"
+  add_foreign_key "sessions", "users"
   add_foreign_key "subclasses", "classes"
   add_foreign_key "subraces", "races"
 end
