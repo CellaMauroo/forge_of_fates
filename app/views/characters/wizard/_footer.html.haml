@@ -1,0 +1,10 @@
+- previous = Characters::WizardController::STEPS[Characters::WizardController::STEPS.index(@step) - 1] if @step != "race"
+%footer{ class: "fixed inset-x-0 bottom-0 z-20 border-t border-slate-800 bg-slate-950/95 backdrop-blur" }
+  %div{ class: "mx-auto grid max-w-6xl grid-cols-3 items-center px-5 py-4 sm:px-8" }
+    - if previous
+      = link_to "← Anterior", wizard_step_characters_path(previous), class: "w-fit cursor-pointer justify-self-start rounded-xl border border-slate-800 px-5 py-3 text-sm font-semibold text-slate-400 hover:border-slate-700 hover:text-white"
+    - else
+      %span
+    %span.justify-self-center.text-sm.font-medium.text-slate-600= "#{Characters::WizardController::STEPS.index(@step) + 1} / 5"
+    %div.justify-self-end
+      = form.submit(@step == "spells" ? "✧ Criar Personagem" : "Próximo →", class: "cursor-pointer rounded-xl px-6 py-3 text-sm font-bold transition #{ @step == 'spells' ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30 hover:bg-violet-500' : 'bg-amber-500 text-slate-950 hover:bg-amber-400' }")

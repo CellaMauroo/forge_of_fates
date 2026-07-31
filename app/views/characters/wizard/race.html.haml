@@ -1,0 +1,21 @@
+- content_for(:full_width_layout, true)
+= render "characters/wizard/stepper"
+= form_with url: wizard_step_characters_path("race"), method: :patch, scope: :wizard, class: "min-h-screen bg-[#0b0f19] pb-28 text-slate-100" do |form|
+  %main.mx-auto.max-w-6xl.px-5.pb-12.pt-7.sm:px-8
+    %h1.font-serif.text-3xl.font-semibold.uppercase Escolha sua raça
+    %p.mt-2.text-slate-400 A raça define suas habilidades inatas, aparência e herança cultural.
+    .mt-7
+      = form.label :name, "Nome do personagem", class: "mb-2 block text-xs font-bold uppercase tracking-wider text-amber-400"
+      = form.text_field :name, value: @wizard.dig("race", "name"), placeholder: "Ex: Aldric Stormweave...", class: "w-full rounded-2xl border border-slate-700 bg-slate-900 px-5 py-4 text-lg outline-none placeholder:text-slate-600 focus:border-amber-500"
+    .mt-10.grid.grid-cols-1.gap-4.md:grid-cols-2.xl:grid-cols-3{ data: { controller: "selection" } }
+      - @races.each do |race|
+        - selected = @wizard.dig("race", "race_id").to_s == race.id.to_s
+        - card_classes = selected ? "border-amber-500 ring-1 ring-amber-500/40" : "border-slate-800"
+        %label{ class: "cursor-pointer rounded-2xl border bg-slate-900/80 p-5 transition hover:border-amber-500/70 #{card_classes}", data: { selection_target: "card", action: "click->selection#choose" } }
+          = form.radio_button :race_id, race.id, checked: selected, class: "sr-only", data: { selection_target: "input" }
+          %h2.font-serif.text-xl.font-semibold= race.name
+          %p.mt-2.min-h-12.text-sm.leading-6.text-slate-400= race.description.presence || "Uma herança singular para seu aventureiro."
+          .mt-4.flex.flex-wrap.gap-2
+            %span{ class: "rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-400" } Versátil
+            %span.rounded.bg-slate-800.px-2.py-1.text-xs.text-slate-400 Traços raciais
+  = render "characters/wizard/footer", form: form

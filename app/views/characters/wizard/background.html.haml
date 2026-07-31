@@ -1,0 +1,24 @@
+- content_for(:full_width_layout, true)
+= render "characters/wizard/stepper"
+= form_with url: wizard_step_characters_path("background"), method: :patch, scope: :wizard, class: "min-h-screen bg-[#0b0f19] pb-28 text-slate-100" do |form|
+  %main.mx-auto.max-w-6xl.px-5.pb-12.pt-7.sm:px-8
+    %h1.font-serif.text-3xl.font-semibold.uppercase Antecedente
+    %p.mt-2.text-slate-400 Sua história antes de se tornar aventureiro. Concede perícias e equipamentos.
+    .mt-7.grid.grid-cols-1.gap-4.md:grid-cols-2{ data: { controller: "selection" } }
+      - @backgrounds.each do |background|
+        - selected = @wizard.dig("background", "background_id").to_s == background.id.to_s
+        - card_classes = selected ? "border-violet-500 bg-violet-500/5" : "border-slate-800"
+        - details = @background_details.fetch(background.name, { skills: "Perícias a definir", items: [] })
+        %label{ class: "relative cursor-pointer rounded-2xl border bg-slate-900 p-5 transition hover:border-violet-500 #{card_classes}", data: { selection_target: "card", action: "click->selection#choose" } }
+          = form.radio_button :background_id, background.id, checked: selected, class: "sr-only", data: { selection_target: "input" }
+          - if selected
+            %span.absolute.right-5.top-5.text-violet-400 ✓
+          %h2.font-serif.text-xl.font-semibold= background.name
+          %p.mt-3.text-sm.leading-6.text-slate-400= background.feature_description.presence || "Uma história que moldou suas perícias e seus recursos iniciais."
+          %p.mt-4.text-sm.text-slate-300
+            %span.text-slate-500 Perícias:
+            = details[:skills]
+          .mt-3.flex.flex-wrap.gap-2
+            - details[:items].each do |item|
+              %span.rounded.bg-slate-800.px-2.py-1.text-xs.text-slate-400= item
+  = render "characters/wizard/footer", form: form
