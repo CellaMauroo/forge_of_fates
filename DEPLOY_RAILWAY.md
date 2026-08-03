@@ -20,10 +20,10 @@ RAILS_MAX_THREADS=5
 WEB_CONCURRENCY=1
 SOLID_QUEUE_IN_PUMA=true
 DATABASE_URL=${{Postgres.DATABASE_URL}}
-RAILS_MASTER_KEY=cole_aqui_o_conteudo_de_config/master.key
+SECRET_KEY_BASE=gere_uma_vez_com_bin/rails_secret
 ```
 
-`RAILS_MASTER_KEY` é segredo: copie o conteúdo de `config/master.key` diretamente para o Railway e nunca o adicione ao Git. O `DATABASE_URL` deve ser uma referência ao serviço Postgres, não uma URL copiada manualmente.
+Gere `SECRET_KEY_BASE` uma única vez com `bin/rails secret`, copie o valor para o Railway e mantenha-o entre os deploys. Ele é um segredo, não deve ser versionado nem trocado a cada deploy. O `DATABASE_URL` deve ser uma referência ao serviço Postgres, não uma URL copiada manualmente.
 
 ## Finalizar
 

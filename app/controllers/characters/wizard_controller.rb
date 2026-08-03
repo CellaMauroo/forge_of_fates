@@ -148,7 +148,9 @@ class Characters::WizardController < ApplicationController
       @spells = Spell.order(:level, :name) if @step == "spells"
       if @step == "abilities"
         @race = Race.find_by(id: @wizard.dig("race", "race_id"))
-        @racial_bonuses = RaceAbilityBonus.where(race_id: @race).each_with_object({}) { |bonus, values| values[bonus.ability_code] = bonus.bonus_value }
+        @racial_bonuses = RaceAbilityBonus.where(race_id: @race).each_with_object({}) do |bonus, values|
+          values[bonus.ability_code.downcase] = bonus.bonus_value
+        end
       end
     end
 end
