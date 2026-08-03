@@ -15,6 +15,65 @@ admin = User.find_or_create_by!(email_address: admin_email) do |user|
   user.password = admin_password
 end
 
+# Catálogos fundamentais usados por raças, classes e requisitos do wizard.
+abilities = {
+  "STR" => "Força",
+  "DEX" => "Destreza",
+  "CON" => "Constituição",
+  "INT" => "Inteligência",
+  "WIS" => "Sabedoria",
+  "CHA" => "Carisma"
+}
+
+abilities.each do |code, name|
+  Ability.find_or_initialize_by(code: code).update!(name: name)
+end
+
+# Raças básicas do Livro do Jogador (D&D 5e). As descrições foram resumidas
+# para a interface do Forge of Fates e os deslocamentos estão em metros.
+races = [
+  { name: "Anão", speed_meters: 7.5, size: "Médio", description: "Robustos e resilientes, conhecidos por sua tradição, coragem e habilidade com pedra e metal.", bonuses: { "CON" => 2 } },
+  { name: "Draconato", speed_meters: 9, size: "Médio", description: "Descendentes orgulhosos de dragões, com herança dracônica e presença imponente.", bonuses: { "STR" => 2, "CHA" => 1 } },
+  { name: "Elfo", speed_meters: 9, size: "Médio", description: "Graciosos e longevos, os elfos carregam sentidos aguçados e uma afinidade natural com o extraordinário.", bonuses: { "DEX" => 2 } },
+  { name: "Gnomo", speed_meters: 7.5, size: "Pequeno", description: "Inventivos e curiosos, os gnomos combinam inteligência, energia e uma profunda ligação com a magia.", bonuses: { "INT" => 2 } },
+  { name: "Halfling", speed_meters: 7.5, size: "Pequeno", description: "Pequenos, ágeis e corajosos, os halflings prosperam graças à sorte e à determinação.", bonuses: { "DEX" => 2 } },
+  { name: "Humano", speed_meters: 9, size: "Médio", description: "Versáteis e ambiciosos, os humanos encontram espaço para se destacar em qualquer vocação.", bonuses: { "STR" => 1, "DEX" => 1, "CON" => 1, "INT" => 1, "WIS" => 1, "CHA" => 1 } },
+  { name: "Meio-Elfo", speed_meters: 9, size: "Médio", description: "Diplomáticos e adaptáveis, os meio-elfos transitam entre dois mundos e unem diferentes heranças.", bonuses: { "CHA" => 2 } },
+  { name: "Meio-Orc", speed_meters: 9, size: "Médio", description: "Fortes e resistentes, os meio-orcs são marcados por determinação, vigor e uma presença intimidadora.", bonuses: { "STR" => 2, "CON" => 1 } },
+  { name: "Tiefling", speed_meters: 9, size: "Médio", description: "Marcados por herança infernal, os tieflings carregam carisma, resistência e poder arcano latente.", bonuses: { "INT" => 1, "CHA" => 2 } }
+]
+
+races.each do |attributes|
+  bonuses = attributes.delete(:bonuses)
+  race = Race.find_or_initialize_by(name: attributes[:name])
+  race.update!(attributes)
+
+  bonuses.each do |ability_code, bonus_value|
+    RaceAbilityBonus.find_or_initialize_by(race: race, ability_code: ability_code, subrace_id: nil).update!(bonus_value: bonus_value, is_choice: false)
+  end
+end
+
+# Classes básicas do Livro do Jogador (D&D 5e). O tipo de conjuração é usado
+# pelo wizard para distinguir combatentes marciais de classes conjuradoras.
+classes = [
+  { name: "Bárbaro", hit_die: 12, primary_ability: "STR", spellcasting_type: "none" },
+  { name: "Bardo", hit_die: 8, primary_ability: "CHA", spellcasting_type: "full" },
+  { name: "Bruxo", hit_die: 8, primary_ability: "CHA", spellcasting_type: "pact" },
+  { name: "Clérigo", hit_die: 8, primary_ability: "WIS", spellcasting_type: "full" },
+  { name: "Druida", hit_die: 8, primary_ability: "WIS", spellcasting_type: "full" },
+  { name: "Feiticeiro", hit_die: 6, primary_ability: "CHA", spellcasting_type: "full" },
+  { name: "Guerreiro", hit_die: 10, primary_ability: "STR", spellcasting_type: "none" },
+  { name: "Ladino", hit_die: 8, primary_ability: "DEX", spellcasting_type: "none" },
+  { name: "Mago", hit_die: 6, primary_ability: "INT", spellcasting_type: "full" },
+  { name: "Monge", hit_die: 8, primary_ability: "DEX", spellcasting_type: "none" },
+  { name: "Paladino", hit_die: 10, primary_ability: "STR", spellcasting_type: "half" },
+  { name: "Patrulheiro", hit_die: 10, primary_ability: "DEX", spellcasting_type: "half" }
+]
+
+classes.each do |attributes|
+  DndClass.find_or_initialize_by(name: attributes[:name]).update!(attributes)
+end
+
 backgrounds = [
   {
     name: "Acólito",
