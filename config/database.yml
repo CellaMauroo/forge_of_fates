@@ -89,20 +89,5 @@ test:
 # for a full overview on how database connection configuration can be specified.
 #
 production:
-  primary: &primary_production
-    <<: *default
-    database: forge_of_fates_production
-    username: forge_of_fates
-    password: <%= ENV["FORGE_OF_FATES_DATABASE_PASSWORD"] %>
-  cache:
-    <<: *primary_production
-    database: forge_of_fates_production_cache
-    migrations_paths: db/cache_migrate
-  queue:
-    <<: *primary_production
-    database: forge_of_fates_production_queue
-    migrations_paths: db/queue_migrate
-  cable:
-    <<: *primary_production
-    database: forge_of_fates_production_cable
-    migrations_paths: db/cable_migrate
+  <<: *default
+  url: <%= ENV["DATABASE_URL"] %>
