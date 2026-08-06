@@ -4,4 +4,6 @@ class CharacterSpell < ApplicationRecord
   belongs_to :character
   belongs_to :spell
   belongs_to :source_class, class_name: "DndClass", optional: true
+
+  validates :source_class, presence: true
 end

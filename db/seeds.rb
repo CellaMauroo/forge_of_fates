@@ -74,6 +74,12 @@ classes.each do |attributes|
   DndClass.find_or_initialize_by(name: attributes[:name]).update!(attributes)
 end
 
+spell_selection_modes = {
+  "Bardo" => "known", "Bruxo" => "known", "Feiticeiro" => "known", "Patrulheiro" => "known",
+  "Mago" => "ability_limited", "Clérigo" => "ability_limited", "Druida" => "ability_limited", "Paladino" => "ability_limited"
+}
+spell_selection_modes.each { |name, mode| DndClass.find_by!(name: name).update!(spell_selection_mode: mode) }
+
 backgrounds = [
   {
     name: "Acólito",
@@ -147,7 +153,153 @@ spells = [
 ]
 
 spells.each do |attributes|
-  Spell.find_or_initialize_by(name: attributes[:name]).update!(attributes)
+  slug = attributes[:name].parameterize
+  spell = Spell.find_by(slug: slug) || Spell.find_by(name: attributes[:name]) || Spell.new
+  spell.update!(attributes.merge(slug: slug, source_book: "phb_2014"))
+end
+
+# Catálogo integral das listas de classe do Livro do Jogador 2014. As 30 magias
+# acima conservam metadados de interface já revisados; para as demais, o seed
+# cria o registro canônico e uma sinopse neutra, sem reproduzir texto do livro.
+require_relative "seeds/player_handbook_2014_spell_lists"
+require_relative "seeds/player_handbook_2014_spell_metadata"
+
+canonical_aliases = {
+  "Mão Mágica" => "Mãos Mágicas", "Míssil Mágico" => "Mísseis Mágicos",
+  "Explosão Mística" => "Rajada Mística", "Armadura de Mago" => "Armadura Arcana",
+  "Escudo" => "Escudo Arcano", "Imagem Espelhada" => "Reflexos", "Animar mortos" => "Animar Mortos",
+  "Rogar maldição" => "Rogar Maldição", "Escrita ilusória" => "Escrita Ilusória"
+}
+canonical_aliases.each do |old_name, new_name|
+  old_spell = Spell.find_by(name: old_name)
+  next unless old_spell
+
+  canonical_spell = Spell.where.not(id: old_spell.id).find_by(name: new_name)
+  if canonical_spell
+    CharacterSpell.where(spell_id: old_spell.id).find_each do |selection|
+      existing = CharacterSpell.find_by(character_id: selection.character_id, spell_id: canonical_spell.id)
+      existing ? selection.destroy! : selection.update_column(:spell_id, canonical_spell.id)
+    end
+    ClassSpell.where(spell_id: old_spell.id).find_each do |class_spell|
+      ClassSpell.find_or_create_by!(class_id: class_spell.class_id, spell_id: canonical_spell.id)
+      class_spell.destroy!
+    end
+    old_spell.destroy!
+  else
+    old_spell.update!(name: new_name, slug: new_name.parameterize)
+  end
+end
+
+school_names = {
+  "abjuração" => "Abjuração", "adivinhação" => "Adivinhação", "conjuração" => "Conjuração",
+  "encantamento" => "Encantamento", "encantmento" => "Encantamento", "evocação" => "Evocação",
+  "ilusão" => "Ilusão", "necromancia" => "Necromancia", "transmutação" => "Transmutação",
+  "transmutaçõ" => "Transmutação", "bjuração" => "Abjuração"
+}
+
+PlayerHandbook2014SpellLists.by_class.each do |class_name, entries|
+  klass = DndClass.find_by!(name: class_name)
+  entries.each do |level, name, school, ritual|
+    spell = Spell.find_by(name: name) || Spell.find_by(slug: name.parameterize) || Spell.new
+    metadata = PlayerHandbook2014SpellMetadata.for(name)
+    spell.update!(
+      name: name, slug: name.parameterize, level: level, school: school_names.fetch(school, school.to_s.titleize),
+      is_ritual: ritual, source_book: "phb_2014",
+      casting_time: metadata&.fetch(0) || spell.casting_time.presence || "Consulte o Livro do Jogador",
+      range_text: metadata&.fetch(1) || spell.range_text.presence || "Consulte o Livro do Jogador",
+      duration: metadata&.fetch(2) || spell.duration.presence || "Consulte o Livro do Jogador",
+      description: spell.description.presence || "Magia do Livro do Jogador 2014. Consulte o mestre para os efeitos completos."
+    )
+    ClassSpell.find_or_create_by!(dnd_class: klass, spell: spell)
+  end
+end
+
+# Relações de lista para o catálogo inicial. As magias são associadas somente às
+# classes que as possuem no Livro do Jogador; o backend jamais aceita uma magia
+# fora desta relação.
+class_spell_names = {
+  "Bardo" => [ "Luz", "Prestidigitação", "Curar Ferimentos", "Detectar Magia", "Enfeitiçar Pessoa", "Onda Trovejante", "Sono", "Imobilizar Pessoa", "Invisibilidade", "Padrão Hipnótico", "Dissipar Magia" ],
+  "Bruxo" => [ "Prestidigitação", "Explosão Mística", "Enfeitiçar Pessoa", "Escudo", "Sono", "Imobilizar Pessoa", "Invisibilidade", "Passo Nebuloso", "Dissipar Magia", "Padrão Hipnótico" ],
+  "Clérigo" => [ "Chama Sagrada", "Luz", "Orientação", "Curar Ferimentos", "Detectar Magia", "Arma Espiritual", "Imobilizar Pessoa", "Dissipar Magia" ],
+  "Druida" => [ "Orientação", "Curar Ferimentos", "Detectar Magia", "Enfeitiçar Pessoa", "Onda Trovejante", "Imobilizar Pessoa", "Dissipar Magia" ],
+  "Feiticeiro" => [ "Raio de Fogo", "Luz", "Prestidigitação", "Toque Chocante", "Escudo", "Sono", "Mãos Flamejantes", "Enfeitiçar Pessoa", "Míssil Mágico", "Imobilizar Pessoa", "Invisibilidade", "Passo Nebuloso", "Raio Ardente", "Teia", "Bola de Fogo", "Contramágica", "Dissipar Magia", "Relâmpago", "Voar" ],
+  "Mago" => [ "Raio de Fogo", "Luz", "Prestidigitação", "Toque Chocante", "Escudo", "Sono", "Mãos Flamejantes", "Enfeitiçar Pessoa", "Míssil Mágico", "Imobilizar Pessoa", "Invisibilidade", "Passo Nebuloso", "Raio Ardente", "Teia", "Bola de Fogo", "Contramágica", "Dissipar Magia", "Relâmpago", "Voar", "Armadura de Mago" ],
+  "Paladino" => [ "Curar Ferimentos", "Detectar Magia", "Escudo", "Imobilizar Pessoa", "Dissipar Magia" ],
+  "Patrulheiro" => [ "Curar Ferimentos", "Detectar Magia", "Passos Longos", "Teia", "Dissipar Magia" ]
+}
+class_spell_names.each do |class_name, names|
+  klass = DndClass.find_by!(name: class_name)
+  Spell.where(name: names).find_each { |spell| ClassSpell.find_or_create_by!(dnd_class: klass, spell: spell) }
+end
+
+# Tabelas 2014 de níveis: truques, magias escolhidas/preparadas e espaços.
+# Para conjuradores preparados, spell_limit guarda somente a parcela gerada pelo
+# nível; Characters::Spellcasting soma o modificador da habilidade apropriada.
+known_spells = {
+  "Bardo" => [ 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 15, 16, 18, 19, 19, 20, 22, 22, 22 ],
+  "Feiticeiro" => [ 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15 ],
+  "Bruxo" => [ 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15 ],
+  "Patrulheiro" => [ 0, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11 ]
+}
+
+prepared_spell_bases = {
+  "Clérigo" => (1..20).to_a,
+  "Druida" => (1..20).to_a,
+  "Mago" => (1..20).to_a,
+  "Paladino" => (1..20).map { |level| level / 2 }
+}
+cantrips = {
+  "Bardo" => [ 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 ],
+  "Clérigo" => [ 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 ],
+  "Druida" => [ 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 ],
+  "Feiticeiro" => [ 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6 ],
+  "Bruxo" => [ 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 ],
+  "Mago" => [ 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 ]
+}
+# A tabela de conjurador completo também é a tabela oficial de multiclasse.
+full_caster_slots = [
+  [], [ 2 ], [ 3 ], [ 4, 2 ], [ 4, 3 ], [ 4, 3, 2 ], [ 4, 3, 3 ], [ 4, 3, 3, 1 ], [ 4, 3, 3, 2 ], [ 4, 3, 3, 3, 1 ],
+  [ 4, 3, 3, 3, 2 ], [ 4, 3, 3, 3, 2, 1 ], [ 4, 3, 3, 3, 2, 1 ], [ 4, 3, 3, 3, 2, 1, 1 ], [ 4, 3, 3, 3, 2, 1, 1 ],
+  [ 4, 3, 3, 3, 2, 1, 1, 1 ], [ 4, 3, 3, 3, 2, 1, 1, 1 ], [ 4, 3, 3, 3, 3, 1, 1, 1, 1 ], [ 4, 3, 3, 3, 3, 1, 1, 1, 1 ],
+  [ 4, 3, 3, 3, 3, 2, 1, 1, 1 ], [ 4, 3, 3, 3, 3, 2, 2, 1, 1 ]
+]
+half_caster_slots = [
+  [], [], [ 2 ], [ 3 ], [ 3 ], [ 4, 2 ], [ 4, 2 ], [ 4, 3 ], [ 4, 3 ], [ 4, 3, 2 ],
+  [ 4, 3, 2 ], [ 4, 3, 3 ], [ 4, 3, 3 ], [ 4, 3, 3, 1 ], [ 4, 3, 3, 1 ],
+  [ 4, 3, 3, 2 ], [ 4, 3, 3, 2 ], [ 4, 3, 3, 3, 1 ], [ 4, 3, 3, 3, 1 ],
+  [ 4, 3, 3, 3, 2 ], [ 4, 3, 3, 3, 2 ]
+]
+slot_hash = ->(slots) { slots.each_with_index.each_with_object({}) { |(count, index), values| values[index + 1] = count if count.positive? } }
+pact_slots = [ [ 1, 1 ], [ 1, 2 ], [ 2, 2 ], [ 2, 2 ], [ 3, 2 ], [ 3, 2 ], [ 4, 2 ], [ 4, 2 ], [ 5, 2 ], [ 5, 2 ], [ 5, 3 ], [ 5, 3 ], [ 5, 3 ], [ 5, 3 ], [ 5, 3 ], [ 5, 3 ], [ 5, 4 ], [ 5, 4 ], [ 5, 4 ], [ 5, 4 ] ]
+
+DndClass.where(name: spell_selection_modes.keys).find_each do |klass|
+  (1..20).each do |level|
+    pact_level, pact_count = klass.spellcasting_type == "pact" ? pact_slots[level - 1] : [ 0, 0 ]
+    arcanum = klass.spellcasting_type == "pact" ? [ [ 11, 6 ], [ 13, 7 ], [ 15, 8 ], [ 17, 9 ] ].filter_map { |minimum, circle| circle if level >= minimum } : []
+    slots = case klass.spellcasting_type
+    when "full" then slot_hash.call(full_caster_slots[level])
+    when "half" then slot_hash.call(half_caster_slots[level])
+    else {}
+    end
+    progression = klass.spellcasting_progressions.find_or_initialize_by(class_level: level)
+    spell_limit = known_spells.fetch(klass.name) { prepared_spell_bases.fetch(klass.name, Array.new(20, 0)) }[level - 1]
+    progression.update!(
+      cantrip_limit: cantrips.fetch(klass.name, Array.new(20, 0))[level - 1],
+      spell_limit: spell_limit,
+      highest_spell_level: klass.spellcasting_type == "pact" ? pact_level : slots.keys.max.to_i,
+      spell_slots: slots, pact_slot_level: pact_level, pact_slot_count: pact_count, mystic_arcanum_levels: arcanum
+    )
+  end
+end
+
+# Tabela de espaços de magia compartilhada por conjuradores completos e
+# multiclasses (PHB 2014, p. 165). Paladino e Patrulheiro entram nela pela
+# metade do nível; Bruxo usa a reserva Pact Magic acima.
+full_caster_slots.each_with_index do |slots, index|
+  next if index.zero?
+
+  attributes = (1..9).index_with { |circle| slots[circle - 1].to_i }
+  MulticlassSpellSlot.find_or_initialize_by(combined_caster_level: index).update!(attributes.transform_keys { |circle| "slot_lvl_#{circle}" })
 end
 
 # Ao criar personagens de demonstração neste arquivo, use sempre a associação

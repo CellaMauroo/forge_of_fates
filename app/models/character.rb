@@ -31,7 +31,7 @@ class Character < ApplicationRecord
   end
 
   def spellcaster?
-    character_classes.any? { |character_class| character_class.dnd_class&.spellcasting_type != "none" }
+    Characters::Spellcasting.new(self).class_choices.any?
   end
 
   def ability_modifier(ability)
@@ -76,14 +76,11 @@ class Character < ApplicationRecord
   end
 
   def spell_slots
-    return {} unless spellcaster?
+    Characters::Spellcasting.new(self).slot_pools.fetch("spellcasting", {})
+  end
 
-    slots = {
-      1 => [ 0, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 ],
-      2 => [ 0, 0, 0, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 ],
-      3 => [ 0, 0, 0, 0, 0, 0, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 ]
-    }
-    slots.transform_values { |table| table.fetch([ level, 20 ].min) }.reject { |_, count| count.zero? }
+  def spell_slot_pools
+    Characters::Spellcasting.new(self).slot_pools
   end
 
   SKILLS = {

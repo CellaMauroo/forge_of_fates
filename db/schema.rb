@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_03_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_03_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -136,6 +136,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_03_000000) do
     t.index ["class_id"], name: "index_class_multiclass_requirements_on_class_id"
   end
 
+  create_table "class_spellcasting_progressions", force: :cascade do |t|
+    t.integer "cantrip_limit", default: 0, null: false
+    t.integer "class_level", null: false
+    t.datetime "created_at", null: false
+    t.bigint "dnd_class_id", null: false
+    t.integer "highest_spell_level", default: 0, null: false
+    t.jsonb "mystic_arcanum_levels", default: [], null: false
+    t.integer "pact_slot_count", default: 0, null: false
+    t.integer "pact_slot_level", default: 0, null: false
+    t.integer "spell_limit", default: 0, null: false
+    t.jsonb "spell_slots", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.index ["dnd_class_id", "class_level"], name: "index_spellcasting_progressions_on_class_and_level", unique: true
+  end
+
   create_table "class_spells", primary_key: ["class_id", "spell_id"], force: :cascade do |t|
     t.bigint "class_id", null: false
     t.bigint "spell_id", null: false
@@ -148,6 +163,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_03_000000) do
     t.integer "hit_die", null: false
     t.string "name", null: false
     t.string "primary_ability", null: false
+    t.string "spell_selection_mode", default: "none", null: false
     t.string "spellcasting_type", default: "none", null: false
     t.datetime "updated_at", null: false
     t.index ["name"], name: "index_classes_on_name", unique: true
@@ -412,7 +428,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_03_000000) do
     t.string "name", null: false
     t.string "range_text"
     t.string "school", null: false
+    t.string "slug"
+    t.string "source_book", default: "phb_2014", null: false
     t.datetime "updated_at", null: false
+    t.index ["slug"], name: "index_spells_on_slug", unique: true
   end
 
   create_table "subclasses", force: :cascade do |t|
@@ -462,6 +481,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_03_000000) do
   add_foreign_key "characters", "users"
   add_foreign_key "class_multiclass_requirements", "abilities", column: "ability_code", primary_key: "code"
   add_foreign_key "class_multiclass_requirements", "classes"
+  add_foreign_key "class_spellcasting_progressions", "classes", column: "dnd_class_id"
   add_foreign_key "class_spells", "classes"
   add_foreign_key "class_spells", "spells"
   add_foreign_key "classes", "abilities", column: "primary_ability", primary_key: "code"

@@ -71,21 +71,33 @@
                 %strong{ class: bonus.negative? ? "text-rose-400" : "text-emerald-400" }= bonus.positive? ? "+#{bonus}" : bonus
       .space-y-4
         %section{ class: "rounded-3xl border border-violet-500/25 bg-slate-900 p-6", data: { controller: "spell-slots", spell_slots_url_value: spell_slot_character_path(@character) } }
-          %h2.font-serif.text-lg.font-semibold.uppercase Espaços de Magia
-          - @character.spell_slots.each do |spell_level, count|
-            - state = @character.spell_slots_state.fetch(spell_level.to_s, {})
-            .mt-5
-              .flex.justify-between.text-sm
-                %span.font-semibold.text-slate-400= "#{spell_level}º Nível"
-                %span.text-violet-400= "#{count - state.values.count(true)} / #{count} disponíveis"
-              .mt-3.grid.gap-3{ class: "grid-cols-#{count}" }
-                - count.times do |index|
-                  - spent = state[index.to_s]
-                  - slot_classes = spent ? "cursor-pointer rounded-xl border border-slate-700 bg-slate-950 py-3 text-lg text-slate-600 transition" : "cursor-pointer rounded-xl border border-violet-500/50 bg-violet-500/15 py-3 text-lg text-violet-400 transition"
-                  %button{ class: slot_classes, type: "button", data: { spell_slots_target: "slot", action: "spell-slots#toggle", level: spell_level, slot: index, spent: spent } } ✧
+          .flex.items-center.justify-between.gap-4
+            %h2.font-serif.text-lg.font-semibold.uppercase Espaços de Magia
+            - if @character.spellcaster?
+              = link_to "✧ Gerenciar", edit_spells_character_path(@character), class: "cursor-pointer text-sm font-semibold text-violet-400 hover:text-violet-300"
+          - pool_names = { "spellcasting" => "Conjuração", "pact_magic" => "Magia de Pacto" }
+          - @character.spell_slot_pools.each do |pool, slots|
+            %div.mt-5
+              %h3.text-sm.font-semibold.text-slate-300= pool_names.fetch(pool)
+              - slots.each do |spell_level, count|
+                - state = @character.spell_slots_state.dig(pool, spell_level.to_s).to_h
+                .mt-4
+                  .flex.justify-between.text-sm
+                    %span.font-semibold.text-slate-400= "#{spell_level}º Nível"
+                    %span.text-violet-400= "#{count - state.values.count(true)} / #{count} disponíveis"
+                  .mt-3.grid.gap-3{ class: "grid-cols-#{[ count, 4 ].min}" }
+                    - count.times do |index|
+                      - spent = state[index.to_s]
+                      - slot_classes = spent ? "cursor-pointer rounded-xl border border-slate-700 bg-slate-950 py-3 text-lg text-slate-600 transition" : "cursor-pointer rounded-xl border border-violet-500/50 bg-violet-500/15 py-3 text-lg text-violet-400 transition"
+                      %button{ class: slot_classes, type: "button", data: { spell_slots_target: "slot", action: "spell-slots#toggle", pool: pool, level: spell_level, slot: index, spent: spent } } ✧
+          - unless @character.spellcaster?
+            %p.mt-5.text-sm.text-slate-500 Este personagem não possui espaços de magia.
           %p.mt-5.text-sm.text-slate-600 Clique em um slot para gastar ou recuperar espaços de magia.
         %section.rounded-3xl.border.border-slate-800.bg-slate-900.p-6
-          %h2.font-serif.text-lg.font-semibold.uppercase Magias Conhecidas
+          .flex.items-center.justify-between.gap-4
+            %h2.font-serif.text-lg.font-semibold.uppercase Magias Conhecidas
+            - if @character.spellcaster?
+              = link_to "Editar", edit_spells_character_path(@character), class: "cursor-pointer text-sm font-semibold text-violet-400 hover:text-violet-300"
           - if @character.spells.any?
             %div{ class: "mt-4 grid gap-3 sm:grid-cols-2" }
               - @character.spells.each do |spell|

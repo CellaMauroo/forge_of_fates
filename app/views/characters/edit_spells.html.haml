@@ -1,0 +1,61 @@
+- content_for(:full_width_layout, true)
+- school_tones = { "Evocação" => "border-rose-500/30 bg-rose-500/10 text-rose-400", "Conjuração" => "border-emerald-500/30 bg-emerald-500/10 text-emerald-400", "Transmutação" => "border-cyan-500/30 bg-cyan-500/10 text-cyan-400", "Abjuração" => "border-blue-500/30 bg-blue-500/10 text-blue-400", "Encantamento" => "border-violet-500/30 bg-violet-500/10 text-violet-400", "Adivinhação" => "border-amber-500/30 bg-amber-500/10 text-amber-400", "Ilusão" => "border-indigo-500/30 bg-indigo-500/10 text-indigo-400", "Necromancia" => "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-400" }
+- existing = @character.character_spells.index_by(&:spell_id)
+%div{ class: "min-h-screen bg-[#0b0f19] pb-12 text-slate-100" }
+  %header{ class: "mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8" }
+    = link_to character_path(@character), class: "cursor-pointer text-sm font-semibold text-slate-400 hover:text-white" do
+      ← Voltar para #{@character.character_name}
+    %span.font-serif.font-bold.text-amber-400 Forge of Fates
+  %main{ class: "mx-auto max-w-6xl px-5 pb-12 sm:px-8", data: { controller: "spell-picker", spell_picker_limits_value: @spell_limits.to_json } }
+    %h1.font-serif.text-3xl.font-semibold.uppercase Gerenciar magias
+    %p.mt-2.text-slate-400 Adicione, remova ou troque magias dentro dos limites das suas classes.
+    %section{ class: "mt-5 rounded-2xl border border-violet-500/25 bg-slate-900 p-4" }
+      .flex.flex-wrap.gap-2
+        - @spell_classes.each do |choice|
+          - klass = choice[:klass]
+          - progression = choice[:progression]
+          %div.rounded-xl.bg-slate-800.px-3.py-2.text-xs.text-slate-300
+            %strong.text-slate-100= "#{klass.name} Nv.#{choice[:level]}"
+            %span= " · círculo #{progression.highest_spell_level}º"
+            %div.mt-1.flex.flex-wrap.gap-x-2.gap-y-1
+              %span{ data: { spell_picker_target: "limit", class_id: klass.id, bucket: "cantrips" } }= "0/#{@spellcasting.selection_limit_for(klass, cantrip: true)} truques"
+              %span{ data: { spell_picker_target: "limit", class_id: klass.id, bucket: "spells" } }= "0/#{@spellcasting.selection_limit_for(klass, cantrip: false)} magias"
+    = form_with url: spells_character_path(@character), method: :patch, scope: :character, class: "mt-6" do |form|
+      .grid.gap-3.sm:grid-cols-3
+        %input{ class: "rounded-xl border border-slate-800 bg-slate-900 px-4 py-2 text-sm text-slate-100", type: "search", placeholder: "Buscar magia", data: { spell_picker_target: "search", action: "input->spell-picker#search" } }
+        %select{ class: "cursor-pointer rounded-xl border border-slate-800 bg-slate-900 px-4 py-2 text-sm text-slate-100", data: { spell_picker_target: "classFilter", action: "change->spell-picker#filterClass" } }
+          %option{ value: "all" } Todas as classes
+          - @spell_classes.each do |choice|
+            %option{ value: choice[:klass].id }= choice[:klass].name
+        %select{ class: "cursor-pointer rounded-xl border border-slate-800 bg-slate-900 px-4 py-2 text-sm text-slate-100", data: { spell_picker_target: "schoolFilter", action: "change->spell-picker#filterSchool" } }
+          %option{ value: "all" } Todas as escolas
+          - @spells.map(&:school).uniq.sort.each do |school|
+            %option{ value: school }= school
+      .mt-6.grid.grid-cols-1.gap-4.md:grid-cols-2
+        - @spells.each do |spell|
+          - selection = existing[spell.id]
+          - sources = @spell_classes.select { |choice| @spellcasting.allowed_for?(spell, choice[:klass]) }
+          - source_id = selection&.source_class_id || sources.first[:klass].id
+          - card_classes = selection ? "border-violet-500 bg-violet-500/5 ring-1 ring-violet-500/40" : "border-slate-800"
+          - tone = school_tones.fetch(spell.school, "border-slate-700 bg-slate-800 text-slate-300")
+          %article{ class: "rounded-2xl border bg-slate-900 p-5 transition #{card_classes}", data: { spell_picker_target: "card", level: spell.level, classes: sources.map { |source| source[:klass].id }.join(","), school: spell.school, name: spell.name.downcase, default_source: source_id } }
+            %input{ type: "hidden", name: "character[spell_selections][#{spell.id}][spell_id]", value: spell.id }
+            .flex.items-center.gap-2
+              %span{ class: "rounded border px-2 py-1 text-xs font-bold #{tone}" }= spell.school
+              %span.text-xs.text-slate-500= spell.level.zero? ? "Truque" : "#{spell.level}º Nível"
+              %label.ml-auto.flex.cursor-pointer.items-center.gap-2.text-sm.font-semibold.text-violet-300
+                %input{ class: "size-4 cursor-pointer accent-violet-500", type: "checkbox", name: "character[spell_selections][#{spell.id}][selected]", value: "1", checked: selection.present?, data: { spell_picker_target: "input", action: "change->spell-picker#select" } }
+                Conhecer
+            %h2.mt-3.font-serif.text-xl.font-semibold= spell.name
+            %p.mt-2.text-sm.text-slate-400= spell.description.to_s.truncate(130)
+            %label.mt-4.block.text-xs.font-semibold.text-slate-400
+              Classe de origem
+              %select{ class: "mt-1 w-full cursor-pointer rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100", name: "character[spell_selections][#{spell.id}][source_class_id]", data: { spell_picker_target: "source", action: "change->spell-picker#sourceChanged" } }
+                - sources.each do |source|
+                  %option{ value: source[:klass].id, selected: source_id.to_s == source[:klass].id.to_s }= source[:klass].name
+      %div{ class: "sticky bottom-0 mt-8 border-t border-slate-800 bg-slate-950/95 py-4" }
+        .flex.items-center.justify-between.gap-4
+          %span.text-sm.text-slate-400
+            %strong.text-violet-400{ data: { spell_picker_target: "count" } } 0
+            selecionadas
+          = form.submit "Salvar magias", class: "cursor-pointer rounded-xl bg-violet-600 px-6 py-3 text-sm font-bold text-white hover:bg-violet-500"
