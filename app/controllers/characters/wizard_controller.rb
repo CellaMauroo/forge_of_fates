@@ -25,9 +25,14 @@ class Characters::WizardController < ApplicationController
 
   def update
     wizard_data[@step] = step_params
+    clear_spell_selection_unless_spellcaster! if @step == "klass"
     session[:character_wizard] = wizard_data
 
-    return create_character if @step == "spells"
+    if @step == "spells"
+      clear_spell_selection_unless_spellcaster!
+      session[:character_wizard] = wizard_data
+      return create_character
+    end
 
     return render_validation_error unless valid_step?
 
@@ -52,7 +57,7 @@ class Characters::WizardController < ApplicationController
         "klass" => { "primary_class_id" => nil, "primary_class_level" => 1, "is_multiclass" => false, "secondary_class_id" => nil, "secondary_class_level" => 1 },
         "abilities" => { "base_attributes" => ABILITIES.index_with { 8 } },
         "background" => { "background_id" => nil },
-        "spells" => { "spell_ids" => [] }
+        "spells" => { "spell_selections" => {} }
       }
     end
 
@@ -69,7 +74,8 @@ class Characters::WizardController < ApplicationController
       when "background"
         params.require(:wizard).permit(:background_id).to_h
       when "spells"
-        { "spell_ids" => Array(params.require(:wizard).permit(spell_ids: [])[:spell_ids]).reject(&:blank?) }
+        selections = params.require(:wizard).permit(spell_selections: {}).fetch(:spell_selections, {}).to_h
+        { "spell_selections" => selections }
       end
     end
 
@@ -88,21 +94,25 @@ class Characters::WizardController < ApplicationController
       primary_class = DndClass.find(data.dig("klass", "primary_class_id"))
       character.hp_current = Characters::HpCalculator.new(character, dnd_class: primary_class).calculate
 
+      character.character_classes.build(dnd_class: primary_class, class_level: data.dig("klass", "primary_class_level").to_i, is_primary_class: true)
+      if data.dig("klass", "is_multiclass") && data.dig("klass", "secondary_class_id").present?
+        character.character_classes.build(dnd_class_id: data.dig("klass", "secondary_class_id"), class_level: data.dig("klass", "secondary_class_level").to_i)
+      end
+
+      updater = Characters::SpellSelectionUpdater.new(character, wizard_spell_selections)
+      return render_creation_error(updater.errors.first) unless updater.valid?
+
       Character.transaction do
         character.save!
-        character.character_classes.create!(dnd_class: primary_class, class_level: data.dig("klass", "primary_class_level").to_i, is_primary_class: true)
-        if data.dig("klass", "is_multiclass") && data.dig("klass", "secondary_class_id").present?
-          character.character_classes.create!(dnd_class_id: data.dig("klass", "secondary_class_id"), class_level: data.dig("klass", "secondary_class_level").to_i)
-        end
-        Spell.where(id: data.dig("spells", "spell_ids")).find_each { |spell| character.character_spells.create!(spell: spell) }
+        updater.save!
       end
 
       session.delete(:character_wizard)
       redirect_to character_path(character), notice: "Personagem criado com sucesso."
-    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound
-      load_collections
-      flash.now[:alert] = "Revise as escolhas antes de criar o personagem."
-      render :spells, status: :unprocessable_entity
+    rescue ActiveRecord::RecordInvalid => error
+      render_creation_error(error.record.errors.full_messages.to_sentence.presence || "Não foi possível criar o personagem.")
+    rescue ActiveRecord::RecordNotFound
+      render_creation_error("Uma das escolhas não está mais disponível. Revise o personagem antes de criar.")
     end
 
     def next_step
@@ -145,12 +155,77 @@ class Characters::WizardController < ApplicationController
         @backgrounds = Background.order(:name)
         @background_details = BACKGROUND_DETAILS
       end
-      @spells = Spell.order(:level, :name) if @step == "spells"
+      if @step == "spells"
+        @spellcasting = wizard_spellcasting
+        @spell_classes = @spellcasting.class_choices
+        @spells = @spellcasting.available_spells.order(:level, :name)
+        @spell_limits = @spell_classes.to_h do |choice|
+          [ choice[:klass].id.to_s, @spellcasting.selection_limits_for(choice[:klass]) ]
+        end
+        @can_select_spells = @spell_classes.any?
+      end
       if @step == "abilities"
         @race = Race.find_by(id: @wizard.dig("race", "race_id"))
         @racial_bonuses = RaceAbilityBonus.where(race_id: @race).each_with_object({}) do |bonus, values|
           values[bonus.ability_code.downcase] = bonus.bonus_value
         end
+      end
+    end
+
+    def clear_spell_selection_unless_spellcaster!
+      return if spellcasting_available?
+
+      wizard_data["spells"] = { "spell_selections" => {} }
+    end
+
+    def spellcasting_available?
+      wizard_class_choices.any? do |choice|
+        choice[:klass].spellcasting_available_at?(choice[:level])
+      end
+    end
+
+    def wizard_spellcasting
+      @wizard_spellcasting ||= begin
+        character = Character.new(wizard_attributes_for_spellcasting)
+        wizard_class_choices.each do |choice|
+          character.character_classes.build(dnd_class: choice[:klass], class_level: choice[:level].to_i)
+        end
+        Characters::Spellcasting.new(character)
+      end
+    end
+
+    def wizard_attributes_for_spellcasting
+      attributes = wizard_data.dig("abilities", "base_attributes").to_h
+      attributes.transform_keys { |key| "#{key}_base" }
+    end
+
+    def wizard_spell_selections
+      wizard_data.dig("spells", "spell_selections").to_h.values.filter_map do |selection|
+        next unless ActiveModel::Type::Boolean.new.cast(selection["selected"])
+
+        { spell_id: selection["spell_id"], source_class_id: selection["source_class_id"] }
+      end
+    end
+
+    def render_creation_error(message)
+      load_collections
+      flash.now[:alert] = message
+      render :spells, status: :unprocessable_entity
+    end
+
+    def wizard_class_choices
+      klass_data = wizard_data.fetch("klass", {})
+      choices = [ [ klass_data["primary_class_id"], klass_data["primary_class_level"] ] ]
+      if klass_data["is_multiclass"]
+        choices << [ klass_data["secondary_class_id"], klass_data["secondary_class_level"] ]
+      end
+
+      class_ids = choices.map(&:first).compact_blank
+      classes_by_id = DndClass.where(id: class_ids).index_by { |klass| klass.id.to_s }
+
+      choices.filter_map do |class_id, level|
+        klass = classes_by_id[class_id.to_s]
+        { klass: klass, level: level } if klass
       end
     end
 end

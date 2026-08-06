@@ -4,14 +4,16 @@ Rails.application.routes.draw do
   resource :session
   resources :passwords, param: :token
   resources :characters, only: %i[ index show create ] do
-    member do
-      patch :hit_points
-      patch :spell_slot
-    end
     collection do
       delete "wizard", to: "characters/wizard#destroy", as: :wizard
       get "wizard/:step", to: "characters/wizard#show", as: :wizard_step
       patch "wizard/:step", to: "characters/wizard#update"
+    end
+    member do
+      patch :hit_points
+      patch :spell_slot
+      get :edit_spells
+      patch :spells, action: :update_spells
     end
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
