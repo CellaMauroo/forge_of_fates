@@ -9,11 +9,10 @@
 #   end
 
 admin_email = "admin@forge-of-fates.local"
-admin_password = "password"
+admin_password = Rails.env.production? ? ENV.fetch("DEMO_ADMIN_PASSWORD") : ENV.fetch("DEMO_ADMIN_PASSWORD", "password")
 
-admin = User.find_or_create_by!(email_address: admin_email) do |user|
-  user.password = admin_password
-end
+admin = User.find_or_initialize_by(email_address: admin_email)
+admin.update!(password: admin_password)
 
 # Catálogos fundamentais usados por raças, classes e requisitos do wizard.
 abilities = {
@@ -155,3 +154,4 @@ end
 # admin.characters.find_or_create_by!(character_name: "Nome do personagem") do |character|
 #   character.assign_attributes(...)
 # end
+
