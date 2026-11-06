@@ -5,10 +5,11 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "preDeployCommand": "bundle exec rails db:prepare",
+    "preDeployCommand": "bundle exec rails db:prepare && bundle exec rails db:seed && bundle exec rails runner db/demo_seeds.rb",
     "healthcheckPath": "/up",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
 }
+
